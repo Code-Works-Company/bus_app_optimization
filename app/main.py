@@ -1,12 +1,16 @@
-from fastapi import FastAPI, HTTPException, Response, status
-from pydantic import BaseModel
-from typing import List
-from process import get_geocode, get_distance_matrix
-from optimization import solve_vrp
-from mangum import Mangum
-from dotenv import load_dotenv
-import numpy as np
 import os
+from typing import List
+
+import numpy as np
+import uvicorn
+from dotenv import load_dotenv
+from fastapi import FastAPI, HTTPException, Response, status
+from fastapi.middleware.cors import CORSMiddleware
+from mangum import Mangum
+from pydantic import BaseModel
+
+from app.optimization import solve_vrp
+from app.process import get_distance_matrix, get_geocode
 
 
 class Location(BaseModel):
@@ -25,8 +29,14 @@ class Locations(BaseModel):
 
 
 app = FastAPI()
-handler = Mangum(app)
 load_dotenv()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 @app.post("/route-optimization/")
@@ -102,3 +112,9 @@ async def cluster_locations(response: Response, locations: Locations):
     )
 
     return solution
+
+
+handler = Mangum(app)
+
+if __name__ == "__main__":
+    uvicorn.run(app, host="0.0.0.0", port=5000)
