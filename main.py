@@ -3,7 +3,10 @@ from pydantic import BaseModel
 from typing import List
 from process import get_geocode, get_distance_matrix
 from optimization import solve_vrp
+from mangum import Mangum
+from dotenv import load_dotenv
 import numpy as np
+import os
 
 
 class Location(BaseModel):
@@ -18,13 +21,21 @@ class Locations(BaseModel):
     max_sizes: List[int]
     startIndex: int
     endIndex: int
+    token: str
 
 
 app = FastAPI()
+handler = Mangum(app)
+load_dotenv()
 
 
-@app.post("/route-optim/{token}")
+@app.post("/route-optimization/")
 async def cluster_locations(response: Response, locations: Locations):
+    # check if token is valid
+    if locations.token != os.getenv("API_KEY"):
+        response.status_code = status.HTTP_401_UNAUTHORIZED
+        return {"error": "Invalid token"}
+
     # temporarily convert coordinates to string for numpy processing
     addresses = []
     for location in locations.locations:
