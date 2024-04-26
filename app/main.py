@@ -40,7 +40,7 @@ app.add_middleware(
 )
 
 
-@app.post("/route-optimization/")
+@app.post("/route-optimization")
 async def cluster_locations(response: Response, locations: Locations):
     # check if token is valid
     if locations.token != os.getenv("API_KEY"):
