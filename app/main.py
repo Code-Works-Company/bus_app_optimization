@@ -36,6 +36,7 @@ app.add_middleware(
     allow_origins=["*"],
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["*"],
 )
 
 
@@ -82,7 +83,7 @@ async def cluster_locations(response: Response, locations: Locations):
         }
     # get coord 2d array from geocode
     coords = [
-        [geocodes["lat"][i], geocodes["lon"][i]]  # type: ignore
+        (geocodes["lat"][i], geocodes["lon"][i])  # type: ignore
         for i in range(len(geocodes["lon"]))  # type: ignore
     ]
     # get distance matrix

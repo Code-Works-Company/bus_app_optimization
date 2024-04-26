@@ -1,13 +1,15 @@
 from typing import List
-from OSMPythonTools.nominatim import Nominatim
+import nominatim.api as napi
 import numpy as np
-import requests
+import asyncio
+import osrm
 
-nominatim = Nominatim()
+py_osrm = osrm.OSRM("/osrm-data")
 
-# osrm_url = "http://100.78.114.117:5000/table/v1/driving/"
-# just for testing
-osrm_url = "http://router.project-osrm.org/table/v1/driving/"
+
+async def search(query):
+    api = napi.NominatimAPIAsync(Path("."))
+    return await api.search(query)
 
 
 def get_routes_as_2d_array(routing, solution):
@@ -49,8 +51,8 @@ def get_geocode(addresses: List) -> List:
             r_dict["osm_id"].append(None)
             r_dict["display_name"].append(None)
             continue
-        print(i, flush=True)
-        response = nominatim.query(i[0] + ", Hanoi")
+        response = asyncio.run(search(i[0] + ", Hanoi"))
+        print(response, flush=True)
         response_dict = response.toJSON()  # type: ignore
         if response_dict == []:
             r_dict["lon"].append(None)
@@ -69,12 +71,13 @@ def get_geocode(addresses: List) -> List:
 def get_distance_matrix(coords: List) -> List:
     # osrm
     # table distance matrix using duration
-    full_url = (
-        osrm_url
-        + ";".join([str(i[1]) + "," + str(i[0]) for i in coords])
-        + "?annotations=duration"
+
+    table_params = osrm.TableParameters(
+        coordinates=coords,
+        annotations=["duration"],
     )
-    response = requests.get(full_url)
+    response = py_osrm.Table(table_params)
+
     response_dict = response.json()
     if response_dict["code"] != "Ok":
         return []
