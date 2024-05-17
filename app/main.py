@@ -10,10 +10,10 @@ from mangum import Mangum
 from pydantic import BaseModel
 
 from app.optimization import solve_vrp
-from app.process import get_distance_matrix, get_geocode
+from app.process import get_distance_matrix, get_geocode, get_polyline_route
 
 
-class Location(BaseModel):
+class Student(BaseModel):
     name: str
     uuid: int
     # coord array or string address
@@ -21,11 +21,10 @@ class Location(BaseModel):
 
 
 class Locations(BaseModel):
-    locations: List[Location]
+    locations: List[Student]
     max_sizes: List[int]
     startIndex: int
     endIndex: int
-    token: str
 
 
 app = FastAPI()
@@ -42,12 +41,8 @@ app.add_middleware(
 
 @app.post("/route-optimization")
 async def cluster_locations(response: Response, locations: Locations):
-    # check if token is valid
-    if locations.token != os.getenv("API_KEY"):
-        response.status_code = status.HTTP_401_UNAUTHORIZED
-        return {"error": "Invalid token"}
-
     # temporarily convert coordinates to string for numpy processing
+    # TODO should really be a function and also be handled with dict than string
     addresses = []
     for location in locations.locations:
         if len(location.address) == 2:
@@ -97,25 +92,84 @@ async def cluster_locations(response: Response, locations: Locations):
 
     if locations.startIndex == -1:
         distance_mat = np.insert(distance_mat, len(distance_mat), 0, axis=0)
-        locations.startIndex = len(distance_mat) - 1
+        startIndex = len(distance_mat) - 1
+        endIndex = locations.endIndex
         counts.append(0)
     if locations.endIndex == -1:
         distance_mat = np.insert(distance_mat, len(distance_mat), 0, axis=0)
-        locations.endIndex = len(distance_mat) - 1
+        endIndex = len(distance_mat) - 1
+        startIndex = locations.startIndex
         counts.append(0)
+    else:
+        startIndex = locations.startIndex
+        endIndex = locations.endIndex
 
     solution = solve_vrp(
         distance_mat.tolist(),  # type: ignore
-        locations.startIndex,
-        locations.endIndex,
+        startIndex,
+        endIndex,
         locations.max_sizes,
         counts,
     )
+    # if start and end index was added remove the last location
+    if locations.startIndex == -1 or locations.endIndex == -1:
+        for i in range(len(solution)):
+            solution[i].remove(len(solution[i]) - 1)
 
-    return solution
+    # TODO polylines
+    # return format
+    r_dict = {
+        "buses": [],
+    }
+    busIndex = 1
+    for locationOrder in solution:
+        # build dict with lat and long key for get_polyline_route
+        route_coords = []
+        for i in locationOrder:
+            route_coords.append(
+                    {
+                        "lat": geocodes["lat"][i],  # type: ignore
+                        "lon": geocodes["lon"][i],  # type: ignore
+                        }
+                    )  # type: ignore
+        bus = {
+            "number": busIndex,
+            "polyline": get_polyline_route(route_coords),
+            "numStudents": 0,
+            "locations": [],
+        }
+        prevLocation = None
+        busIndex += 1
 
+        order = 1
+        print(geocodes, flush=True)
+        for location in locationOrder:
+            bus["numStudents"] += counts[location]
+            # find estTime, if its the first location, its 0
+            if prevLocation is None:
+                estTime = 0
+            else:
+                estTime = distance_mat[prevLocation][location]
+                order += 1
+            print(location, flush=True)
+            bus["locations"].append(
+                {
+                    "address": geocodes["display_name"][location],  # type: ignore
+                    "osm_id": geocodes["osm_id"][location],  # type: ignore
+                    "coords": {
+                        "lat": geocodes["lat"][location],  # type: ignore
+                        "lon": geocodes["lon"][location],  # type: ignore
+                    },
+                    "students": [], #TODO
+                    "estTime": estTime,
+                    "order": order,
+                }
+            )
+        r_dict["buses"].append(bus)
+
+    return r_dict
 
 handler = Mangum(app)
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=5000)
+    uvicorn.run(app, host="0.0.0.0", port=5000, workers=1)
