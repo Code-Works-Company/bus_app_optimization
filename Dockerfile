@@ -19,5 +19,7 @@ COPY ./start.sh ./start.sh
 RUN pip install --no-cache-dir -r requirements.txt
 
 EXPOSE 5000
+# port 5000 for cloud run
+ENV PORT 5000
 
 CMD /bin/bash ./start.sh

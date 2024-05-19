@@ -68,7 +68,7 @@ async def cluster_locations(response: Response, locations: Locations):
 
     # get geocode, list of locations using list comprehension
     geocodes = get_geocode(unique_locations)
-    # if coordinates not found, return 500 with index of failed
+    # if coordinates not found, return 206 with index of failed
     if None in geocodes["lon"]:  # type: ignore
         response.status_code = status.HTTP_206_PARTIAL_CONTENT
         return {
