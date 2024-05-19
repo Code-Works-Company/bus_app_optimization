@@ -49,16 +49,17 @@ def get_geocode(addresses: List) -> List:
             continue
         response = requests.get(photon_url + parse.quote(i[0]) + "&limit=1").json()
         # lon, lat, osm_id, display_name
-        if response is None:
-            r_dict["lon"].append(None)
-            r_dict["lat"].append(None)
-            r_dict["osm_id"].append(None)
-            r_dict["display_name"].append(None)
-        else:
+        # if no result found, append None, try first
+        try:
             r_dict["lon"].append(response["features"][0]["geometry"]["coordinates"][0])
             r_dict["lat"].append(response["features"][0]["geometry"]["coordinates"][1])
             r_dict["osm_id"].append(response["features"][0]["properties"]["osm_id"])
             r_dict["display_name"].append(response["features"][0]["properties"]["name"])
+        except:
+            r_dict["lon"].append(None)
+            r_dict["lat"].append(None)
+            r_dict["osm_id"].append(None)
+            r_dict["display_name"].append(None)
     return r_dict  # type: ignore
 
 

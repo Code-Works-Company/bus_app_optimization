@@ -70,7 +70,7 @@ async def cluster_locations(response: Response, locations: Locations):
     geocodes = get_geocode(unique_locations)
     # if coordinates not found, return 500 with index of failed
     if None in geocodes["lon"]:  # type: ignore
-        response.status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
+        response.status_code = status.HTTP_206_PARTIAL_CONTENT
         return {
             "error": "Geocode not found",
             "unique_locations": unique_locations,

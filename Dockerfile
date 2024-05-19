@@ -1,4 +1,4 @@
-FROM ubuntu:jammy
+FROM ubuntu:22.04
 
 RUN apt update && apt install -y python3 python3-pip python3-venv build-essential \
         libtbb-dev libboost-all-dev libicu-dev pkg-config git zlib1g-dev gcc-9 cmake \ 
