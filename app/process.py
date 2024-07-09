@@ -4,9 +4,10 @@ from valhalla import Actor, get_config, get_help
 import requests
 from urllib import parse
 
-config = get_config(tile_extract='/custom_files/valhalla_tiles.tar', verbose=True)
+config = get_config(tile_extract="/custom_files/valhalla_tiles.tar", verbose=True)
 actor = Actor(config)
 photon_url = "http://localhost:2322/api/?q="
+
 
 def get_routes_as_2d_array(routing, solution):
     """Returns the routes as a 2D array, where each array represents a bus."""
@@ -64,15 +65,13 @@ def get_geocode(addresses: List) -> List:
 
 
 def get_distance_matrix(coords: List) -> List:
-    # osrm
     # table distance matrix using duration
     request_dict = {
-        "sources": [ {"lat": coord[0], "lon": coord[1]} for coord in coords],
-        "targets": [ {"lat": coord[0], "lon": coord[1]} for coord in coords],
+        "sources": [{"lat": coord[0], "lon": coord[1]} for coord in coords],
+        "targets": [{"lat": coord[0], "lon": coord[1]} for coord in coords],
         "costing": "bus",
     }
     response_dict = actor.matrix(request_dict)
-    print(response_dict, flush=True)
     # build distance matrix from "source_to_target" key, which has "time" key
     distance_matrix = []
     for source in response_dict["sources_to_targets"]:
@@ -81,14 +80,38 @@ def get_distance_matrix(coords: List) -> List:
             row.append(target["time"])
         distance_matrix.append(row)
     return distance_matrix  # type: ignore
-    
+
 
 def get_polyline_route(coords: List) -> str:
     request_dict = {
-        "locations": [{"lat": coord["lat"], "lon": coord["lon"]} for coord in coords],
-        "costing": "bus"
+        "locations": [
+            {"lat": coord["lat"], "lon": coord["lon"], "type": "through"}
+            for coord in coords
+        ],
+        "costing": "bus",
     }
-
+    # replace first and last locations with "break"
+    request_dict["locations"][0]["type"] = "break"
+    request_dict["locations"][-1]["type"] = "break"
+    # TODO: not very coordinated with route optim
     route = actor.route(request_dict)
-    print(route, flush=True)
     return route["trip"]["legs"][0]["shape"]  # type: ignore
+
+
+def get_unique_locations(locations):
+    addresses = []
+    for location in locations.locations:
+        if len(location.address) == 2:
+            addresses.append([location.address[0], location.address[1], 0])
+        else:
+            addresses.append([location.address[0], 0, 1])
+    unique_locations, counts = np.unique(addresses, return_counts=True, axis=0)
+    unique_locations = unique_locations.tolist()
+    counts = counts.tolist()
+    for i in range(len(unique_locations)):
+        if unique_locations[i][2] == "0":
+            unique_locations[i] = [unique_locations[i][0], unique_locations[i][1]]
+        else:
+            unique_locations[i] = [unique_locations[i][0]]
+
+    return unique_locations, counts

@@ -6,11 +6,15 @@ import uvicorn
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Response, status
 from fastapi.middleware.cors import CORSMiddleware
-from mangum import Mangum
 from pydantic import BaseModel
 
 from app.optimization import solve_vrp
-from app.process import get_distance_matrix, get_geocode, get_polyline_route
+from app.process import (
+    get_distance_matrix,
+    get_geocode,
+    get_polyline_route,
+    get_unique_locations,
+)
 
 
 class Student(BaseModel):
@@ -41,33 +45,10 @@ app.add_middleware(
 
 @app.post("/route-optimization")
 async def cluster_locations(response: Response, locations: Locations):
-    # temporarily convert coordinates to string for numpy processing
-    # TODO should really be a function and also be handled with dict than string
-    addresses = []
-    for location in locations.locations:
-        if len(location.address) == 2:
-            addresses.append(
-                ",".join(str(coord) for coord in location.address) + "coord"
-            )
-        else:
-            addresses.append(location.address[0])
-    # convert location array into unique list with another list for frequency
-    unique_locations, counts = np.unique(addresses, return_counts=True)
-    unique_locations = unique_locations.tolist()
-    counts = counts.tolist()
-    # convert back to float array
-    for i in range(len(unique_locations)):
-        if "coord" in unique_locations[i]:
-            # remove coord
-            unique_locations[i] = unique_locations[i][:-5]
-            unique_locations[i] = [
-                float(coord) for coord in unique_locations[i].split(",")
-            ]
-        else:
-            unique_locations[i] = [unique_locations[i]]
-
+    unique_locations, counts = get_unique_locations(locations)
     # get geocode, list of locations using list comprehension
     geocodes = get_geocode(unique_locations)
+
     # if coordinates not found, return 206 with index of failed
     if None in geocodes["lon"]:  # type: ignore
         response.status_code = status.HTTP_206_PARTIAL_CONTENT
@@ -127,11 +108,11 @@ async def cluster_locations(response: Response, locations: Locations):
         route_coords = []
         for i in locationOrder:
             route_coords.append(
-                    {
-                        "lat": geocodes["lat"][i],  # type: ignore
-                        "lon": geocodes["lon"][i],  # type: ignore
-                        }
-                    )  # type: ignore
+                {
+                    "lat": geocodes["lat"][i],  # type: ignore
+                    "lon": geocodes["lon"][i],  # type: ignore
+                }
+            )  # type: ignore
         bus = {
             "number": busIndex,
             "polyline": get_polyline_route(route_coords),
@@ -143,14 +124,17 @@ async def cluster_locations(response: Response, locations: Locations):
 
         order = 1
         print(geocodes, flush=True)
+        # TODO: test if order works correctly
         for location in locationOrder:
             bus["numStudents"] += counts[location]
             # find estTime, if its the first location, its 0
             if prevLocation is None:
                 estTime = 0
+                prevLocation = location
             else:
-                estTime = distance_mat[prevLocation][location]
+                estTime = int(distance_mat[prevLocation][location])
                 order += 1
+                prevLocation = location
             print(location, flush=True)
             bus["locations"].append(
                 {
@@ -160,16 +144,16 @@ async def cluster_locations(response: Response, locations: Locations):
                         "lat": geocodes["lat"][location],  # type: ignore
                         "lon": geocodes["lon"][location],  # type: ignore
                     },
-                    "students": [], #TODO
+                    # "students": [],  # TODO
                     "estTime": estTime,
                     "order": order,
                 }
             )
         r_dict["buses"].append(bus)
 
+    print(r_dict)
     return r_dict
 
-handler = Mangum(app)
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=5000, workers=1)
+    uvicorn.run(app, host="0.0.0.0", port=8000, workers=1)

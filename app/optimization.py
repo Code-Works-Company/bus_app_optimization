@@ -11,6 +11,7 @@ def create_data_model(
     data["end"] = [end_index]
 
     # divide bus increment by length of vehicle capacities to find max buses and remainder for smaller buses
+    # TODO: fix error when less buses than total students
     num_max_buses = bus_increment // len(vehicle_capacities)
     small_bus = sorted(vehicle_capacities)[bus_increment % len(vehicle_capacities) - 1]
     data["vehicle_capacities"] = [max(vehicle_capacities)] * num_max_buses + [small_bus]
