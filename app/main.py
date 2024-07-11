@@ -71,15 +71,19 @@ async def cluster_locations(response: Response, locations: Locations):
             "error": "Need to specify either/both start and end index",
         }
 
-    if locations.startIndex == -1:
-        distance_mat = np.insert(distance_mat, len(distance_mat), 0, axis=0)
+    # TODO: index out of range error with end index somewhere
+    elif locations.startIndex == -1:
+        # place zeros to make it a square matrix
+        distance_mat = np.pad(distance_mat, ((0, 1), (0, 1)), "constant")
         startIndex = len(distance_mat) - 1
         endIndex = locations.endIndex
         counts.append(0)
-    if locations.endIndex == -1:
-        distance_mat = np.insert(distance_mat, len(distance_mat), 0, axis=0)
-        endIndex = len(distance_mat) - 1
+    elif locations.endIndex == -1:
+        # distance_mat = np.insert(distance_mat, len(distance_mat), 0, axis=0)
+        # distance_mat = np.insert(distance_mat, len(distance_mat), 0, axis=1)
+        distance_mat = np.pad(distance_mat, ((0, 1), (0, 1)), "constant")
         startIndex = locations.startIndex
+        endIndex = len(distance_mat) - 1
         counts.append(0)
     else:
         startIndex = locations.startIndex
@@ -94,10 +98,8 @@ async def cluster_locations(response: Response, locations: Locations):
     )
     # if start and end index was added remove the last location
     if locations.startIndex == -1 or locations.endIndex == -1:
-        for i in range(len(solution)):
-            solution[i].remove(len(solution[i]) - 1)
+        solution = [i[:-1] for i in solution]
 
-    # TODO polylines
     # return format
     r_dict = {
         "buses": [],
@@ -123,7 +125,7 @@ async def cluster_locations(response: Response, locations: Locations):
         busIndex += 1
 
         order = 1
-        print(geocodes, flush=True)
+        # print(geocodes, flush=True)
         # TODO: test if order works correctly
         for location in locationOrder:
             bus["numStudents"] += counts[location]
@@ -135,7 +137,7 @@ async def cluster_locations(response: Response, locations: Locations):
                 estTime = int(distance_mat[prevLocation][location])
                 order += 1
                 prevLocation = location
-            print(location, flush=True)
+            # print(location, flush=True)
             bus["locations"].append(
                 {
                     "address": geocodes["display_name"][location],  # type: ignore
@@ -151,7 +153,7 @@ async def cluster_locations(response: Response, locations: Locations):
             )
         r_dict["buses"].append(bus)
 
-    print(r_dict)
+    # print(r_dict)
     return r_dict
 
 

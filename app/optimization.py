@@ -3,20 +3,46 @@ from ortools.constraint_solver import pywrapcp
 
 
 def create_data_model(
-    distance_matrix, start_index, end_index, vehicle_capacities, bus_increment, demands
+    distance_matrix,
+    start_index,
+    end_index,
+    vehicle_capacities,
+    forced_bus_overflow,
+    demands,
 ):
     data = {}
     data["distance_matrix"] = distance_matrix
-    data["start"] = [start_index]
-    data["end"] = [end_index]
+    data["vehicle_capacities"] = []
 
-    # divide bus increment by length of vehicle capacities to find max buses and remainder for smaller buses
-    # TODO: fix error when less buses than total students
-    num_max_buses = bus_increment // len(vehicle_capacities)
-    small_bus = sorted(vehicle_capacities)[bus_increment % len(vehicle_capacities) - 1]
-    data["vehicle_capacities"] = [max(vehicle_capacities)] * num_max_buses + [small_bus]
+    # sort vehicle capacities and get total number of vehicles
+    vehicle_capacities = sorted(vehicle_capacities)
+    total_student = sum(demands)
+    while forced_bus_overflow > 0:
+        if len(vehicle_capacities) < forced_bus_overflow:
+            total_student = vehicle_capacities[-1]
+            forced_bus_overflow -= len(vehicle_capacities)
+        else:
+            total_student += vehicle_capacities[forced_bus_overflow - 1]
+            forced_bus_overflow = 0
+
+    while True:
+        # find vehicle capacity where total_student is greater than vehicle capacity
+        size = 0
+        for i in range(len(vehicle_capacities)):
+            if total_student > vehicle_capacities[i]:
+                size = vehicle_capacities[i]
+            else:
+                continue
+        if size == 0:
+            # it should be handled by the forced_bus_overflow so don't increment
+            break
+        else:
+            data["vehicle_capacities"].append(size)
+            total_student -= size
 
     data["num_vehicles"] = len(data["vehicle_capacities"])
+    data["start"] = [start_index] * data["num_vehicles"]
+    data["end"] = [end_index] * data["num_vehicles"]
     data["demands"] = demands
     # specific end point
     return data
@@ -58,14 +84,14 @@ def solve_vrp(
     end_index,
     vehicle_capacities,
     demands,
-    bus_increment=1,
+    forced_bus_overflow=1,
 ):
     data = create_data_model(
         distance_matrix,
         start_index,
         end_index,
         vehicle_capacities,
-        bus_increment,
+        forced_bus_overflow,
         demands,
     )
     print(data, flush=True)
@@ -104,6 +130,7 @@ def solve_vrp(
     solution = routing.SolveWithParameters(search_parameters)
 
     # recursive function until solution is found
+    # TODO: time condition
     if solution is None:
         solve_vrp(
             distance_matrix,
@@ -111,7 +138,7 @@ def solve_vrp(
             end_index,
             vehicle_capacities,
             demands,
-            bus_increment + 1,
+            forced_bus_overflow + 1,
         )
 
     return get_routes(routing, manager, solution)
