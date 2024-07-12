@@ -7,19 +7,19 @@ RUN update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-9 100
 
 COPY ./app/requirements.txt ./requirements.txt
 
-# set pythonpath to include nominatim
 ENV PYTHONUNBUFFERED True
 ENV PBF_PATH /custom_files/vietnam-latest.osm.pbf
 COPY ./app ./app
 COPY ./valhalla_data /custom_files
-COPY ./photon.jar /photon.jar
-COPY ./photon_data/ /photon_data
+COPY https://github.com/komoot/photon/releases/download/0.5.0/photon-0.5.0.jar /photon.jar
+COPY https://download1.graphhopper.com/public/extracts/by-country-code/vn/photon-db-vn-latest.tar.bz2 /photon_data.tar.bz2
+RUN tar -xvf /photon_data.tar.bz2 -C /
 COPY ./start.sh ./start.sh
 
 RUN pip install --no-cache-dir -r requirements.txt
 
-EXPOSE 5000
+EXPOSE 8000
 # port 5000 for cloud run
-ENV PORT 5000
+ENV PORT 8000
 
 CMD /bin/bash ./start.sh

@@ -79,8 +79,6 @@ async def cluster_locations(response: Response, locations: Locations):
         endIndex = locations.endIndex
         counts.append(0)
     elif locations.endIndex == -1:
-        # distance_mat = np.insert(distance_mat, len(distance_mat), 0, axis=0)
-        # distance_mat = np.insert(distance_mat, len(distance_mat), 0, axis=1)
         distance_mat = np.pad(distance_mat, ((0, 1), (0, 1)), "constant")
         startIndex = locations.startIndex
         endIndex = len(distance_mat) - 1

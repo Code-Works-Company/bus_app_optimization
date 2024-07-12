@@ -52,6 +52,7 @@ def get_routes(routing, manager, solution):
     """Extracts the routes from the solution and returns them as a 2D array."""
     # Number of vehicles in the problem.
     num_vehicles = routing.vehicles()
+    print(num_vehicles, flush=True)
     # Initialize the 2D array to store the routes.
     routes = []
 
@@ -67,6 +68,7 @@ def get_routes(routing, manager, solution):
             # Add the node index to the route.
             route.append(node_index)
             # Get the next index in the route.
+            # TODO: Crashes here sometimes, no idea the conditions
             index = solution.Value(routing.NextVar(index))
         # Convert the end index to the node index in the data model.
         node_index = manager.IndexToNode(index)
