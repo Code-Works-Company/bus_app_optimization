@@ -11,8 +11,8 @@ ENV PYTHONUNBUFFERED True
 ENV PBF_PATH /custom_files/vietnam-latest.osm.pbf
 COPY ./app ./app
 COPY ./valhalla_data /custom_files
-COPY https://github.com/komoot/photon/releases/download/0.5.0/photon-0.5.0.jar /photon.jar
-COPY https://download1.graphhopper.com/public/extracts/by-country-code/vn/photon-db-vn-latest.tar.bz2 /photon_data.tar.bz2
+ADD https://github.com/komoot/photon/releases/download/0.5.0/photon-0.5.0.jar /photon.jar
+ADD https://download1.graphhopper.com/public/extracts/by-country-code/vn/photon-db-vn-latest.tar.bz2 /photon_data.tar.bz2
 RUN tar -xvf /photon_data.tar.bz2 -C /
 COPY ./start.sh ./start.sh
 
