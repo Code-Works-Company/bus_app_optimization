@@ -52,7 +52,6 @@ def get_routes(routing, manager, solution):
     """Extracts the routes from the solution and returns them as a 2D array."""
     # Number of vehicles in the problem.
     num_vehicles = routing.vehicles()
-    print(num_vehicles, flush=True)
     # Initialize the 2D array to store the routes.
     routes = []
 
@@ -96,7 +95,7 @@ def solve_vrp(
         forced_bus_overflow,
         demands,
     )
-    print(data, flush=True)
+    # print(data, flush=True)
     manager = pywrapcp.RoutingIndexManager(
         len(data["distance_matrix"]), data["num_vehicles"], data["start"], data["end"]
     )
