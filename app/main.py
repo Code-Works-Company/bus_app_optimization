@@ -45,6 +45,7 @@ app.add_middleware(
 
 @app.post("/route-optimization")
 async def cluster_locations(response: Response, locations: Locations):
+    print(locations, flush=True)
     unique_locations, counts = get_unique_locations(locations)
     # get geocode, list of locations using list comprehension
     geocodes = get_geocode(unique_locations)
