@@ -45,6 +45,11 @@ def create_data_model(
     data["end"] = [end_index] * data["num_vehicles"]
     data["demands"] = demands
     # specific end point
+
+    # attempted patch fix
+    # increment vehicle capacities by one
+    data["vehicle_capacities"] = [i + 1 for i in data["vehicle_capacities"]]
+
     return data
 
 

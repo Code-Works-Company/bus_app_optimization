@@ -4,7 +4,7 @@ from valhalla import Actor, get_config, get_help
 import requests
 from urllib import parse
 
-config = get_config(tile_extract="/custom_files/valhalla_tiles.tar", verbose=True)
+config = get_config(tile_extract="./custom_files/valhalla_tiles.tar", verbose=True)
 actor = Actor(config)
 photon_url = "http://localhost:2322/api/?q="
 
@@ -115,10 +115,13 @@ def get_unique_locations(locations):
             unique_locations[i] = [unique_locations[i][0]]
         # find and decrement start and end index by 1
         if locations.startIndex != -1:
-            if unique_locations[i] == locations.locations[locations.startIndex].address:
+            if unique_locations[i] == [
+                str(i) for i in locations.locations[locations.startIndex].address
+            ]:
                 counts[i] -= 1
         if locations.endIndex != -1:
-            if unique_locations[i] == locations.locations[locations.endIndex].address:
+            if unique_locations[i] == [
+                str(i) for i in locations.locations[locations.startIndex].address
+            ]:
                 counts[i] -= 1
-
     return unique_locations, counts
