@@ -113,5 +113,12 @@ def get_unique_locations(locations):
             unique_locations[i] = [unique_locations[i][0], unique_locations[i][1]]
         else:
             unique_locations[i] = [unique_locations[i][0]]
+        # find and decrement start and end index by 1
+        if locations.startIndex != -1:
+            if unique_locations[i] == locations.locations[locations.startIndex].address:
+                counts[i] -= 1
+        if locations.endIndex != -1:
+            if unique_locations[i] == locations.locations[locations.endIndex].address:
+                counts[i] -= 1
 
     return unique_locations, counts
