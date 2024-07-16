@@ -1,5 +1,6 @@
 from ortools.constraint_solver import routing_enums_pb2
 from ortools.constraint_solver import pywrapcp
+import os
 
 
 class Route:
@@ -47,7 +48,7 @@ class Route:
         self.search_parameters.local_search_metaheuristic = (
             routing_enums_pb2.LocalSearchMetaheuristic.GUIDED_LOCAL_SEARCH
         )
-        self.search_parameters.time_limit.seconds = 5
+        self.search_parameters.time_limit.seconds = os.environ.get("TIME_LIMIT", 10)
 
     def calculate_vehicle_capacity(self, vehicle_capacities, forced_bus_overflow):
         # sort vehicle capacities and get total number of vehicles

@@ -5,6 +5,7 @@ from urllib import parse
 from app.route import Route
 import requests
 import numpy as np
+import os
 
 
 class Student(BaseModel):
@@ -22,7 +23,9 @@ class Locations(BaseModel):
 
 
 class ProcessData:
-    _config = get_config("./custom_files/valhalla_tiles.tar")
+    _config = get_config(
+        os.environ.get("VALHALLA_DIR", "./custom_files/valhalla_tiles.tar")
+    )
     _actor = Actor(config=_config)
     _photon_url = "http://localhost:2322/api/?q="
 
