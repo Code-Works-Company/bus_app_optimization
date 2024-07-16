@@ -36,6 +36,8 @@ class ProcessData:
         )
 
     def process_data(self, response: Response, locations: Locations):
+        # print into json for debug
+        print(locations.model_dump_json())
         # Process the data
         # convert into unique location and counts
         if locations.startIndex == -1 and locations.endIndex == -1:
@@ -67,6 +69,7 @@ class ProcessData:
         distance_matrix = self.get_distance_matrix(coords)
 
         arbitraryEndpoint = False
+        arbitraryStartpoint = False
         if locations.startIndex == -1:
             # place zeros to make it a square matrix
             distance_matrix = np.pad(distance_matrix, ((0, 1), (0, 1)), "constant")
@@ -77,7 +80,7 @@ class ProcessData:
             distance_matrix = np.pad(distance_matrix, ((0, 1), (0, 1)), "constant")
             locations.endIndex = len(distance_matrix) - 1
             counts.append(0)
-            arbitraryEndpoint = True
+            arbitraryStartpoint = True
 
         route = Route(
             distance_matrix=distance_matrix,
@@ -88,9 +91,14 @@ class ProcessData:
             demands=counts,
         )
         routes = route.solve_vrp()
-        if arbitraryEndpoint:
+        # TODO: 99% sure the error is here
+        # only when end point so likely caused by popping the wrong thing
+        if arbitraryStartpoint:
             for i in range(len(routes)):
                 routes[i].pop()
+        elif arbitraryEndpoint:
+            for i in range(len(routes)):
+                routes[i].pop(0)
         response_dict = self.construct_response(
             routes,
             geocodes,
