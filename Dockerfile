@@ -21,7 +21,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 EXPOSE 8000
 # port 5000 for cloud run
 ENV PORT 8000
-ENV VALHALLA_DIR ./custom_files/valhalla_tiles.tar
+ENV VALHALLA_DIR /custom_files/valhalla_tiles.tar
 ENV TIME_LIMIT 10
 
 CMD /bin/bash ./start.sh
